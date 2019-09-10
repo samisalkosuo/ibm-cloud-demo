@@ -11,7 +11,9 @@ The demonstration is a trivial use case to see logins of existing applications. 
 
 The demo architecture:
 
-kuva tähän
+.Demo architecture
+image::demo-architecture.png[Demo architecture,800]
+
 
 Some points to make:
 
@@ -331,6 +333,8 @@ With all the above steps, the demo solution is now ready and everything _should_
 But the principle and architecture remains, regardless of technology and implementation details.
 
 
+.Reminder: Demo architecture
+image::demo-architecture.png[Demo architecture,800]
 
 
 
