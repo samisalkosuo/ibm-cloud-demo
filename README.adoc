@@ -1,4 +1,4 @@
-= ibm-cloud-demo
+= IBM Cloud demonstrations
 :toc: preamble
 :toc-title:
 :imagesdir: images
@@ -25,6 +25,7 @@ Some points to make:
 ** _Functions_ - run application code without worrying about infrastructure or scalability.
 ** _Node-RED_ - browser-based, graphical flow coding. Good for prototyping.
 ** _Cloudant_ - NoSQL, JSON-based database. Easy to consume, without worrying about SQL schemas, tables, etc.
+** _Continuous Delivery_ - Automated deployment to speed up delivery of new application, features and fixes.
 * The concept shown in the architecture can be implemented in many technologies. 
 ** For example, several programming languages are used: Java, Python and Javascript in this demo
 * Technologies and concepts are used in todays enterprises.
