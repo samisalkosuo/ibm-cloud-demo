@@ -1,4 +1,4 @@
-= IBM Cloud demonstrations
+= IBM Cloud Demo
 :toc: preamble
 :toc-title:
 :imagesdir: images
