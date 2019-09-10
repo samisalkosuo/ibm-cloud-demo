@@ -1,0 +1,336 @@
+= ibm-cloud-demo
+:toc: preamble
+:toc-title:
+:imagesdir: images
+
+IBM Cloud demo using Event Streams, Liberty, Continuous Delivery and Node-RED.
+
+== Introduction
+
+The demonstration is a trivial use case to see logins of existing applications. But the use case is unimportant, the point of the demonstration is to show how various technologies work together. 
+
+The demo architecture:
+
+kuva tähän
+
+Some points to make:
+
+* Each component (except GitHub) shown in the picture is running in IBM Cloud.
+** But one of the points is that each component can also be on different cloud or on-premise.
+* Each component is chosen for a reason:
+** _Daytrader Liberty app_ - demonstrates a traditional application. There are a lot of these kind applications running in todays enterprises.
+** _Event Streams_ - Kafka by IBM. Used to build real-time data pipelines and streaming applications.
+** _Functions_ - run application code without worrying about infrastructure or scalability.
+** _Node-RED_ - browser-based, graphical flow coding. Good for prototyping.
+** _Cloudant_ - NoSQL, JSON-based database. Easy to consume, without worrying about SQL schemas, tables, etc.
+* The concept shown in the architecture can be implemented in many technologies. 
+** For example, several programming languages are used: Java, Python and Javascript in this demo
+* Technologies and concepts are used in todays enterprises.
+
+
+== Prerequisites
+
+Some prereqs for this demo:
+
+* https://cloud.ibm.com[IBM Cloud] account.
+* Setup https://cloud.ibm.com/docs/cli[IBM Cloud CLI].
+* Setup https://cloud.ibm.com/docs/openwhisk?topic=cloud-functions-cli_install[IBM Functions CLI].
+* https://maven.apache.org/[Maven] installed locally in order to build the Java application.
+* Git installed locally.
+* GitHub account in order to set up Continuous Delivery.
+
+== The demo setup
+
+This is a guideline, not a detailed documentation, how to set up the aforementioned architecture. 
+
+The assumption is that none of the services exists in the users IBM Cloud account.
+
+The steps are:
+
+* Setup Event Streams.
+* Clone Daytrader app locally.
+* Create Node-RED application
+** This uses starter kit and creates also Cloudant database.
+* Set up IBM Functions.
+* Set up Continous Delivery.
+* See the use case in action:
+** Modify code.
+** See the Continuous Delivery in action.
+** See the results.
+
+Note that the steps are valid at the time of writing. As time passes, things change.
+
+== Event Streams
+
+The first step is to create Event Streams instance. This is done using IBM Cloud web console.
+
+* Go to https://cloud.ibm.com/catalog/services/event-streams[Event Streams].
+** You need to login to IBM Cloud before you can create the instance.
+* Select Dallas as location/region.
+** Free Lite-plan is available in Dallas.
+* If you want the free plan, make sure it is selected.
+* Click 'Create'.
+* Because we know what we are doing, we can create Kafka topic and service credentials to be used.
+* To create a topic, go to Topics as in the image below:
+
+.Create a Topic
+image::create-topic.png[Create a topic,800]
+
+* Use following settings:
+** Topic name: `daytrader-logins`
+** Partitions: `1`
+** Message retention: `A week`
+
+* Next, we need service credentials so that the application can access this Kafka instance.
+* Go to 'Service credentials' and click 'New credential':
+
+.Create Service credentials
+image::create-service-credentials.png[Create Service credentials,800]
+
+* You can leave everything in their defaults.
+* Click 'Add' to create new credentials.
+* Click 'View credentials' to see the credentials.
+** These include API key, brokers, etc. 
+** When needed, come to see the credentials and copy correct values where needed.
+
+
+== Daytrader - Java application
+
+Java application we are using is the widely known Daytrader. It is sample application of online stock trading application. 
+
+* Application source code is in GitHub: https://github.com/samisalkosuo/sample.daytrader8.
+* In order to use Continuous Delivery of this demo, you need to fork this repository to your own GitHub account.
+** If you fork this, use your own repo instead of mine.
+* Clone the repo locally:
+** `git clone https://github.com/samisalkosuo/sample.daytrader8.git`
+* Change application name in `manifest.yml` file.
+* See the repo for more instructions how to run the app.
+** https://github.com/samisalkosuo/sample.daytrader8
+* You can use this app locally to see the demo in action after Node-RED application and Functions has been set up.
+
+
+== Node-RED application
+
+Node-RED starter creates both Node-RED application and Cloudant service. 
+
+* Go to https://cloud.ibm.com/catalog[IBM Cloud catalog] and search Node-RED.
+
+.Node-RED starter service
+image::node-red-starter.png[Node-RED starter]
+
+* Enter the app name and host name and select a region you want.
+
+.Creating Node-RED starter
+image::create-node-red-starter.png[Creating Node-RED starter,800]
+
+* Click create.
+* It takes a moment to create Cloudant service and Node-RED (Node.js) application.
+* When it's running, go to application URL and follow instructions.
+* After set up you see the welcome screen.
+
+.Node-RED application start page
+image::node-red-page.png[Node-RED application start page,800]
+
+* Click 'Go to your Node-RED flow editor' and you find yourself in the flow editor (after login).
+* You can create the flows manually but let's import existing.
+* See link:node-red/flows.json[node-red/flows.json]
+* Copy it all to clipboard.
+* And find Import from clipboard from Node-RED flow editor.
+** Hint: upper-right corner.
+
+.Imported flow
+image::node-red-imported-flow.png[Node-RED imported flow,800]
+
+* Click 'Deploy' and you have your Node-RED application up and running.
+** Or not. You may get error `TypeError: Cannot read property 'credentials' of null` from Cloudant nodes.
+** Apparently service binding does not work correctly when importing.
+** To fix both Cloudant nodes, add something to description and click 'Done' and 'Deploy'.
+
+.Add description to Cloudant node
+image::node-red-fix-cloudant.png[Add description to Cloudant node,800]
+
+* Go to your <app URL>/logins and you should see text `empty`.
+
+=== Store message flow
+
+This flow receives JSON payload from called by IBM Functions serverless code (that will be set up next). The flow then splits messages, in case there are more than one, and stores each message as separate document to Cloudant database.
+
+.Store message flow
+image::store_message_flow.png[Store message flow,800]
+
+
+=== Login logs flow
+
+This flow listens HTTP request (from browser) and then retrieves documents from Cloudant and extracts topic name and user id from each document sends JSON response back to browser.
+
+.Login logs flow
+image::login_logs_flow.png[Login logs flow,800]
+
+
+== Functions
+
+IBM Functions is used to listen the Kafka topic and when messages arrive to the topic, a function is triggered.
+The function receives message and then sends to the Node-RED application store message flow.
+
+IBM Functions supports Event Streams and it is documented here: https://cloud.ibm.com/docs/openwhisk?topic=cloud-functions-pkg_event_streams.
+
+* Create package binding:
+** Change Kafka brokers, API key and other correct information to this command:
+```
+ibmcloud fn package bind /whisk.system/messaging myMessageHub -p kafka_brokers_sasl \
+"[\"<KAFKA_BROKER_1>\", \
+\"<KAFKA_BROKER_2>\", \
+\"<KAFKA_BROKER_3>\", \
+\"<KAFKA_BROKER_4>\", \
+\"<KAFKA_BROKER_5>\", \
+\"<KAFKA_BROKER_6>\"]" \
+-p user token -p password <KAFKA_API_KEY> -p kafka_admin_url <KAFKA_ADMIN_URL>
+```
+* Create trigger using this command:
+```
+ibmcloud fn trigger create MyMessageHubTrigger -f myMessageHub/messageHubFeed -p topic daytrader-logins -p isJSONData true
+```
+* After trigger is created using CLI, we'll use web UI to add function to the trigger.
+* Go to Triggers page in the Functions UI.
+
+.Functions Triggers
+image::functions_trigger.png[Functions Triggers,800]
+
+* Click the trigger name and you'll see empty connected actions.
+
+.Trigger connected actions
+image::functions_trigger_connected_actions.png[Trigger connected actions,800]
+
+* Click 'Add' to create new action to be triggered.
+* Set parameters to your liking (except that select Runtime to be Python 3) like in the picture below
+
+.Action to be added
+image::functions_add_action.png[Add connected actions,800]
+
+* Click 'Create&Add'.
+* A page opens with newly created action. Click it and you'll default Python action.
+
+.Python action
+image::functions_default_action.png[Default action,800]
+
+* Add following code, but change the URL to your Node-RED application.
+
+```
+# main() will be run when you invoke this action
+#
+# @param Cloud Functions actions accept a single parameter, which must be a JSON object.
+#
+# @return The output of this action, which must be a JSON object.
+#
+#
+import sys
+import requests
+import json
+
+def main(dict):
+    
+    url = 'https://demo-nodered-mcl.eu-de.mybluemix.net/storemessage'
+    payload = dict
+    r = requests.post(url, data=json.dumps(payload))
+    print(r)
+    return dict
+```
+
+* Click 'Save' and that's it. Serverless action is triggered when there is new message in Kafka topic in Event Streams.
+
+== Local testing
+
+If all the above were set up correctly, Daytrader application can be executed locally to see that messages are sent to Event Streams and they end up in the Cloudant database.
+
+* See the Daytrader repo for instructions how to do local testing.
+** Use your own fork, or mine https://github.com/samisalkosuo/sample.daytrader8.
+
+== Continuous Delivery
+
+We use Continuous Delivery to make automated deployment when developer commits code to GitHUb.
+
+* Go to https://cloud.ibm.com/catalog/services/continuous-delivery
+* Create new Continuous Delivery service.
+
+.Create Continuous Delivery service
+image::continuous_delivery_create.png[Create Continuous Delivery,800]
+
+* Choose desired region and click 'Create'
+* You are presented welcom screen and click https://cloud.ibm.com/devops/create[create a toolchain] link to create a new toolchain for the Continuous Delivery.
+* Find _Build your own toolchain_ and click it.
+
+.Build your own toolchain
+image::continuous_delivery_new_toolchain.png[Build your own toolchain,800]
+
+* Name your toolchain and click 'Create'.
+* Click 'Add a tool' and find GitHub.
+* Create new integration to your own fork of Daytrader like in the image below.
+
+.Create GitHub integration
+image::continuous_delivery_github_source.png[Create GitHub integration,800]
+
+* Click 'Create integration'.
+* Add another tool _Delivery Pipeline_ and you have toolchain like in the image below.
+
+.Toolchain
+image::continuous_delivery_toolchain.png[Toolchain,800]
+
+* Click the 'Delivery'-box.
+* Click 'Add stage' and your GitHub repo should be filled.
+* Select the branch you want to use.
+* Change to _Jobs_ and click 'Add Job'.
+* Select Build-type and then select 'Maven' builder type.
+* Change Build archive directory to '.' like in the image below.
+
+.Toolchain build
+image::continuous_delivery_builder.png[Toolchain build,800]
+
+* Click 'Save' to save the stage.
+* Create another Stage (_Deploy_) and add a Deploy-job.
+* Select Cloud Foundry and set the parameters.
+* Add following script in the 'Deploy script':
+
+```
+#!/bin/bash
+
+#set Kafka variables to vars.yml file
+echo "kafka_bootstrap_server: ${KAFKA_BOOTSTRAP_SERVER}" > vars.yml
+echo "kafka_api_key: ${KAFKA_API_KEY}" >> vars.yml
+
+#Blue-Green deployment using Cloud Foundry
+#http://jamesthom.as/blog/2014/07/22/zero-downtime-deployments-using-bluemix/
+
+#Rename the existing application to allow staging a new instance without
+#overwriting existing version.
+#it dpes not matter if application does not exist
+cf rename ${CF_APP} old_${CF_APP} || true
+
+#Deploy the updated application, which will be bound to the same external
+#address. HTTP traffic is load balanced between the two versions automatically.
+cf push --vars-file vars.yml ${CF_APP}
+
+#Verify the new application is working and then delete the old instance.
+#except that we don't verify and trust that it works
+#and it does not matter if application does not exist
+cf delete old_${CF_APP} -f || true
+
+```
+
+* The deploy script renames old application (if it exists), deploys new one and then deletes the old version.
+* This is Blue-Green deployment with minimal interruption to the service.
+** If any user was logged in when the change was done, they would need to login to service again.
+** In this demo Daytrader application, the database is included with the application so any changes would be lost as well. Of course, in real life, the database would be external and changes would persist.
+* Now, when there is new commit to GitHub repository, this toolchain is triggered and application is build and deployed.
+** It takes couple of minutes, because build and deployment is done from scratch everytime.
+
+
+== Conclusion
+
+With all the above steps, the demo solution is now ready and everything _should_ work. However, todays technology is fast moving and services change, come and go, so details to setup services may change at anytime and services themselves may cease to exist.
+
+But the principle and architecture remains, regardless of technology and implementation details.
+
+
+
+
+

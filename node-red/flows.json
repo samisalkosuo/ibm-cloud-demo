@@ -1,0 +1,372 @@
+[
+    {
+        "id": "ab7fada3.756b4",
+        "type": "tab",
+        "label": "Store message",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8c02fe9d.fe3dc8",
+        "type": "tab",
+        "label": "Login logs",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "65d794df.70b284",
+        "type": "http in",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "url": "/storemessage",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "818cb46f.409b2",
+                "baf3637c.7544c"
+            ]
+        ]
+    },
+    {
+        "id": "fefc49ad.5d3508",
+        "type": "http response",
+        "z": "ab7fada3.756b4",
+        "name": "http response",
+        "statusCode": "",
+        "headers": {},
+        "x": 840,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "818cb46f.409b2",
+        "type": "debug",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 350,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "a23e91b9.da176",
+        "type": "function",
+        "z": "ab7fada3.756b4",
+        "name": "Get messages",
+        "func": "msg.payload=msg.payload.messages\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 480,
+        "y": 200,
+        "wires": [
+            [
+                "55cbdc81.553774",
+                "e719aa8b.5e582"
+            ]
+        ]
+    },
+    {
+        "id": "7ca4d610.a6756",
+        "type": "debug",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 830,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "baf3637c.7544c",
+        "type": "json",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": true,
+        "x": 330,
+        "y": 200,
+        "wires": [
+            [
+                "a23e91b9.da176"
+            ]
+        ]
+    },
+    {
+        "id": "aefbceb8.01fc28",
+        "type": "cloudant out",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "cloudant": "",
+        "database": "daytrader-db",
+        "service": "node-red-sjs-cloudantNoSQLDB",
+        "payonly": true,
+        "operation": "insert",
+        "x": 830,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "55cbdc81.553774",
+        "type": "split",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 650,
+        "y": 260,
+        "wires": [
+            [
+                "7ca4d610.a6756",
+                "aefbceb8.01fc28",
+                "fefc49ad.5d3508"
+            ]
+        ]
+    },
+    {
+        "id": "e719aa8b.5e582",
+        "type": "debug",
+        "z": "ab7fada3.756b4",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 670,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "6c2f7dce.e5d1f4",
+        "type": "http in",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "url": "/logins",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 60,
+        "wires": [
+            [
+                "ed3fde16.9d1f2"
+            ]
+        ]
+    },
+    {
+        "id": "52e498de.29c81",
+        "type": "http response",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "http response",
+        "statusCode": "",
+        "headers": {},
+        "x": 880,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "d0d61d3a.d806b8",
+        "type": "function",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "Extract values",
+        "func": "var uid = msg.payload.value.replace(/\"/g, \"\");\nvar topic = msg.payload.topic;\n\nmsg.payload=topic+\" \"+uid;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 380,
+        "y": 300,
+        "wires": [
+            [
+                "d1d1b672.ed6598",
+                "aad273aa.27104"
+            ]
+        ]
+    },
+    {
+        "id": "ed3fde16.9d1f2",
+        "type": "cloudant in",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "cloudant": "",
+        "database": "daytrader-db",
+        "service": "node-red-sjs-cloudantNoSQLDB",
+        "search": "_all_",
+        "design": "",
+        "index": "",
+        "x": 130,
+        "y": 140,
+        "wires": [
+            [
+                "ad6f3f4f.1990c8"
+            ]
+        ]
+    },
+    {
+        "id": "7385ee22.9c0a9",
+        "type": "split",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 350,
+        "y": 200,
+        "wires": [
+            [
+                "96fc54e0.8e2008",
+                "d0d61d3a.d806b8"
+            ]
+        ]
+    },
+    {
+        "id": "96fc54e0.8e2008",
+        "type": "debug",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 530,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "d1d1b672.ed6598",
+        "type": "debug",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 570,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "aad273aa.27104",
+        "type": "join",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "mode": "auto",
+        "build": "string",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": "false",
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "x": 550,
+        "y": 300,
+        "wires": [
+            [
+                "e429927.ae3587",
+                "4e035720.012cb"
+            ]
+        ]
+    },
+    {
+        "id": "e429927.ae3587",
+        "type": "debug",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 710,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "4e035720.012cb",
+        "type": "sort",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "order": "descending",
+        "as_num": false,
+        "target": "payload",
+        "targetType": "msg",
+        "msgKey": "",
+        "msgKeyType": "elem",
+        "seqKey": "payload",
+        "seqKeyType": "msg",
+        "x": 690,
+        "y": 240,
+        "wires": [
+            [
+                "6bce67d0.16c22",
+                "52e498de.29c81"
+            ]
+        ]
+    },
+    {
+        "id": "6bce67d0.16c22",
+        "type": "debug",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 890,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "ad6f3f4f.1990c8",
+        "type": "function",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "Check if empty",
+        "func": "if (msg.payload == null || msg.payload.length === 0) {\n    msg.payload = \"empty\"\n   return [ msg, null ];\n} else {\n   return [ null, msg ];\n}\n",
+        "outputs": 2,
+        "noerr": 0,
+        "x": 320,
+        "y": 140,
+        "wires": [
+            [
+                "5490fcf.809dc84"
+            ],
+            [
+                "7385ee22.9c0a9"
+            ]
+        ]
+    },
+    {
+        "id": "5490fcf.809dc84",
+        "type": "http response",
+        "z": "8c02fe9d.fe3dc8",
+        "name": "empty http response",
+        "statusCode": "",
+        "headers": {},
+        "x": 560,
+        "y": 120,
+        "wires": []
+    }
+]
