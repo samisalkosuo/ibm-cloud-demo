@@ -235,7 +235,6 @@ def main(dict):
     url = 'https://demo-nodered-mcl.eu-de.mybluemix.net/storemessage'
     payload = dict
     r = requests.post(url, data=json.dumps(payload))
-    print(r)
     return dict
 ```
 
